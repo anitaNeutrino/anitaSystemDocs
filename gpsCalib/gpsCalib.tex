@@ -1,0 +1,112 @@
+\documentclass{article}
+\usepackage{authblk,graphicx}
+\usepackage{fancybox}% Enable the fancybox macro for landscape tables
+\usepackage{multirow}
+
+%% Caption command good for all figures, indecies, etc.
+\newcommand{\mycaption}[3]{
+\caption[#1]{\textsf{#2.} \label{#1} \small{\linespread{1}#3}}
+}
+
+% Draft stuff
+%
+%********
+\def\draftversion{Y}                % Y for draft, N for final version
+%********
+\def\note[#1]#2{\message{(#1)}\if\draftversion
+{\noindent\em[#2]\/}\fi}
+%
+% Mark all printed pages for draft version using dvips \specials
+%
+\if \draftversion Y
+\special{!userdict begin /bop-hook{gsave 200 30 translate 66 rotate
+  /Times-Roman findfont 160 scalefont setfont 0 0 moveto 0.85 setgray
+  (Preliminary) show grestore}def end}
+\fi
+\def\@oddhead{
+         \vbox{\hbox to\hsize{\sl \rightmark \hfill  }
+              \vspace{2pt} \hbox to\hsize{\hrulefill}}}
+
+
+\begin{document}
+\title{ANITA-4 ADU5 Calibration Note}
+\author{R.J. Nichol}
+  
+%\date{April, 2003}
+\maketitle
+
+%%\tableofcontents 
+
+\section{Introduction}
+The ADU5 are differential GPS systems which determine payload attitude from the relative positions of four GPS antennas. In order for the attitude determination to work the ADU5 needs to have a good description of the reltive position of the four antennas. The recommended way of achieving this is using the ADU5 in calibration mode to determine these antenna offsets.
+
+There is Windows software to do this calibration but we would like to generate the calibration files using the flight computer, to allow for the possibility of an in-flight calibration. This Windows software generates a series of binary files, the purpose of this note is to describe those files and how to create them.
+
+\subsection{Binary File Types}
+The binary file types are all described in the ADU5 Manual~\cite{ref:adu5Manual}. The three file types are:
+\begin{itemize}
+\item B file type -- collected satellite measurement stuff
+\item E file type — ephemeris files
+\item A file — computed attitude
+\end{itemize}
+
+\subsection{Generating the binary files on the flight machine}
+These binary files are constucted from the ADU5 Raw Data Messages. On the flight machine there is (will be) a program called {\tt makeCalibAdu5DataFiles} that performs the following tasks:
+\begin{enumerate}
+\item Turn off all messages
+\item Query RID RIO [To check it is an ADU5]
+\item \verb|$PASHS,RCI,001.0| [Set recording interval to 1 second]
+\item \verb|$PASHS,ELM,10|  [Elevation mask to 10 degrees]
+\item \verb|$PASHS,PDS,OFF| [Special setting for calibration]
+\item \verb|$PASHS,OUT,B,MBN,SNV,PBN,ATT,BIN| [Turns on output] \\
+  The options given are:
+\begin{itemize}
+\item MBN = Satellite measurement data  [B file]
+\item SNV = Ephemeris data   [E file]
+\item PBN = Position, velocity, DOP data  [?]
+\item ATT = Attitude data  [A file]
+\item BIN = Binary format
+\end{itemize}
+\item After data taking completes turn ON PDS and disable binary messages
+\end{enumerate}
+
+\subsection{Flight software structures}
+There are two sets of flight software structures, one set corresponds to the binary format of the ADU5 serial messages. The other set corresponds to the binary format of the output files. It should be trivial to write a set of functions in gpsToolsLib that convert from one to another. These structs are briefly described in Table~\ref{tab:gpsStructs}.
+
+
+\begin{table}[hbt]
+  \centering
+  \begin{tabular}{| c | c | l |}
+\hline
+    Serial Structure & Output Structure & Comment \\
+\hline
+RawAdu5MBNStruct & RawAdu5BFileSatelliteHeader+ChanObs & Satellite measurement data \\
+RawAdu5SNVStruct & E file & Ephemeris data \\
+RawAdu5PBNStruct & RawAdu5BFileRawNav & Position, velocity, DOP data \\
+RawAdu5ATTStruct & A file & Attitude data \\
+& RawAdu5BFileHeader & Header information \\
+\hline
+  \end{tabular}
+  \caption{The structures used by the GPS calibration}
+  \label{tab:gpsStructs}
+\end{table}
+
+\subsection{Binary file format}
+The b-file format should consist of the following structures:
+\begin{enumerate}
+\item RawAdu5BFileHeader -- One per file \\
+  Now we loop over basically each second:
+  \begin{enumerate}
+  \item RawAdu5BFileRawNav -- One per epoch (each second is an epoch) \\
+    Now we loop over the satellites [the number in the RawAdu5BFileRawNav]    
+    \begin{enumerate}
+    \item RawAdu5BFileSatelliteHeader
+    \item RawAdu5BFileChanObs [in theory the can be more than one per satellite, the number is in the RawAdu5BFileHeader and seems to be 1]
+    \end{enumerate}
+  \end{enumerate}
+\end{enumerate}
+  
+  
+
+
+\end{document}
