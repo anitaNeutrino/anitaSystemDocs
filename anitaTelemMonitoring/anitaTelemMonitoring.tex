@@ -1,0 +1,150 @@
+\documentclass{article}
+\usepackage{authblk,graphicx}
+\usepackage{fancybox}% Enable the fancybox macro for landscape tables
+\usepackage{multirow}
+\usepackage{url}
+
+%% Caption command good for all figures, indecies, etc.
+\newcommand{\mycaption}[3]{
+\caption[#1]{\textsf{#2.} \label{#1} \small{\linespread{1}#3}}
+}
+
+% Draft stuff
+%
+%********
+\def\draftversion{Y}                % Y for draft, N for final version
+%********
+\def\note[#1]#2{\message{(#1)}\if\draftversion
+{\noindent\em[#2]\/}\fi}
+%
+% Mark all printed pages for draft version using dvips \specials
+%
+\if \draftversion Y
+\special{!userdict begin /bop-hook{gsave 200 30 translate 66 rotate
+  /Times-Roman findfont 160 scalefont setfont 0 0 moveto 0.85 setgray
+  (Preliminary) show grestore}def end}
+\fi
+\def\@oddhead{
+         \vbox{\hbox to\hsize{\sl \rightmark \hfill  }
+              \vspace{2pt} \hbox to\hsize{\hrulefill}}}
+
+
+\begin{document}
+\title{ANITA-4 Telemetry \& Monitoring}
+\author{R.J. Nichol}
+  
+\date{\today}
+\maketitle
+
+%%\tableofcontents 
+
+\section{Introduction}
+During the flight it is critical that we are able to monitor the health of the instrument. This is particularly true during the line-of-sight period in which we obtain the majority of our telemetry data. It is critical that we use this time to ensure that the instrument is working as well as it can.
+
+I would suggest people read Marty's data transfer website which describes how LOS (line-of-sight) data arrives at the los machine in the hangar and how TDRSS and Openport data arrive on the Tdrss1 machine in the OCC in Palestine\cite{web:martyDataTransfer}.
+
+Once the data has arrived on the acquisition machine (los-acq and sip-acq) it gets shipped around the world. Most places use Marty's fantastic data transfer programs, anita-aware and UCL use some rysnc scripts.
+
+A suite of database-based monitoring programs have been developed and are described elsewhere~\cite{web:anitaMonitoring}.
+
+This document will describe the AWARE monitoring software and explain how to run the various scripts that make up AWARE at anita-aware.
+
+\section{Telemetry Data Copy Scripts}
+There are individual scripts for copying data from one of the acquisition to anita-aware, these are located in {\tt  /home/anita/palestine/copyScripts}. The four data copying scripts are:
+\begin{description}
+\item{streamLOSdata.sh} \\Copies data from the LOS acquisition machine to {\tt /data/palestine2016/telem/raw\_los}
+\item{streamTDRSSdata.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/palestine2016/telem/fast\_tdrss}
+\item{streamOpenportDataSouth.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/palestine2016/telem/openport}
+\item{streamSlowRate.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/palestine2016/telem/slow\_tdrss(iridium)}
+\end{description}
+normally these will be running in the upper left virtual window of anita-aware. After a reboot of anita-aware these scripts need to be manually restarted. Very occasionally one of the scripts will get hung up and will need to be killed (Ctl-c) and restarted.
+
+\section{Command Copy Script}
+The AWARE monitor uses the JSON files written by cmdTui to display the commands sent to the payload (for easy comparison with the command echos received from the payload). The command copying script is \\{\tt /home/anita/Code/anitaTelem/copyCmdSendFromTdrss.sh} and the json command log files will be written to {\tt \$AWARE\_OUTPUT\_DIR/ANITA4/cmdSend/palestine} and {\tt \$AWARE\_OUTPUT\_DIR/ANITA4/cmdSend/los}.
+
+\section{AWARE Scripts}
+There are two steps to the AWARE processing.
+\begin{itemize}
+\item Converting telemetry packets into pseudo-raw data as would be found on the flight computer.
+\item Processing the raw data into ROOT and JSON files which are used by MagicDisplay and AWARE, respectively.
+\end{itemize}
+
+\subsection{Pseudo-Raw Data Creation}
+As each new telemetry file arrives on anita-aware it is automatically processed into pseudo-raw data. One 'interesting' feature is that the processing scripts need to determine the run number for each packet using solely the information in the packets. There are only a few packets that contain information about the run number,including {\it RunStart\_t}, {\it OtherMonitor\_t} and {\it LogWatchdStart\_t}. A consequence of this determination of run number using the telemetry data means that there are edge effects where packets can be assigned to the wrong run number.
+
+The code and scripts for processing the telemetry data in to pseudo-raw data are all located in {\tt /home/anita/Code/anitaTelem}. The important scripts are:
+\begin{description}
+\item{setupAwareVariablesForTelem.sh} \\Sets the various environmental variables needed by the aware processing scripts.
+\item{processTelemFile} \\Runs over one or more telemetry files and creates pseudo-raw files in the raw data directory, e.g  {\texttt /data/palestine2016/telem/raw\_los/00278/000175}
+\item{newTelemFileWatcher.py} \\A python script that uses libinotify to call processTelemFile when new telemetry files arrive on anita-aware.
+\item{startAwareTelem.sh} \\A simple script which checks if the correct environmental variables are set, and checks if the processing and rootifying scripts are running.
+\end{description}
+
+\subsection{ROOT and JSON File Creation}
+Once the pseudo-raw data has been created it is ready for conversion into ROOT and JSON files. The important scripts in this phase are:
+\begin{description}
+\item{rootAndJsonFileLoop.sh} A shell script that checks whether recent runs have any new data and if they do calls checkIfRunNeedsProcessing.py
+\item{checkIfRunNeedsProcessing.py} A python script that creates or updates ROOT files when a pseudo-raw data directory has new data since the last ROOT file creation.
+\end{description}
+
+\subsubsection{ROOT File Creation}
+In {\tt /home/anita/Code/simpleTreeMaker} are the worker scripts and programs that process the raw data in ROOT data. These are almost identical to the scripts used to produce ROOT data files from the full raw data set. In most circumstances you will not need to run these scripts manually.
+
+\subsubsection{JSON File Creation}
+In {\tt /home/anita/Code/anitaAwareFileMaker} are the worker scripts and programs that process ROOT data into JSON data which can be read by the AWARE web monitor. Again in most circumstance you will not need to run these scripts manually.
+
+\section{AWARE Web pages}
+The raw php, html and javascript files that make up AWARE are in {\tt /home/anita/Code/awareTelem}. This is the directory which is mounted on the web server at \url{http://157.132.95.98/awareTelem/}. In brief, the files {\tt web/config/ANITA4} are the ANITA4 customised files which make up the AWARE web monitor.
+
+\section{Directory Structure}
+The directory structure in {\tt /data/palestine2016/telem/} is summarised below:
+\begin{description}
+\item{{\tt raw}} \\The pseudo-raw run directories are created here
+\item{{\tt root}} \\The ROOT run directories are created here
+\item{{\tt raw\_los}} \\Copied from los-acq
+\item{{\tt fast\_tdrss}} \\Copied from tdrss1
+\item{{\tt slow\_tdrss}} \\Copied from tdrss1
+\item{{\tt openport}} \\Copied from tdrss1, unless openport is running in non-flight mode and copying directly here
+\item{{\tt iridium}} \\Copied from tdrss1
+\item{{\tt aware}} \\The AWARE directory
+\item{{\tt aware/output}} \\The AWARE output directory.
+\item{{\tt aware/output/ANITA4}} \\The AWARE output directory for ANITA-4.
+\item{{\tt aware/output/ANITA4/aux}} \\Text files sent from the payload (except config files) end up here.
+\item{{\tt aware/output/ANITA4/cmdEcho}}\\ Command echos from the payload
+\item{{\tt aware/output/ANITA4/cmdSent}} \\Command logs from the two commanding machines
+\item{{\tt aware/output/ANITA4/db}} \\The flat text database files like the runNumberMap and the lastOpenpportFile live here, these are all automatically created. Bad things may happen if you change them.
+\item{{\tt aware/output/ANITA4/event}} \\Event files produced by processTelemFile
+\item{{\tt aware/output/ANITA4/ghd}} \\The currently less than useful telemetry file information
+\item{{\tt aware/output/ANITA4/log}} \\Logs from running the aware processing scripts
+\item{{\tt aware/output/ANITA4/runXX}} \\The actual JSON data from each run, also linked into a date directory for searching by date.
+\end{description}
+
+\section{Troubleshooting}
+\begin{description}
+\item{LOS not updating but everything else on AWARE is good} \\Most likely the LOS machine has crashed. Other possibilities are that the copy script has got stuck or we are not sending LOS data. \\ Is the little red light on? Does it respond to key presses? Can you log in and see new data arriving by {\tt tail -f /usr/local/anita/losacq/log/current}? What is the last run and file number in {\tt /data/anita/raw\_los}? Does this match what is on anita-aware? 
+\item{Nothing on aware is updating}. \\Either we aren't receiving telemetry (check directly on los machine and tdrss1). We aren't copying it to anita-aware or the two AWARE processing scripts aren't running correctly.
+\item{Only events and los/openport are updating}. \\Most likely the rootAndJsonFileLoop.sh script is not running. Check if it is running with e.g. {\tt ps x | grep root} and if not restart it.
+\item{LOS red light blinking and not much data getting through}. \\Talk to the TM guys and see if they can tune it up. At some point we do reach the end of LOS they know best. When we do go out of LOS remember to send the command to turn LOS data sending off.
+\item{anita-aware is rebooted or power cycled} \\
+\begin{itemize}
+\item Source the AWARE setup script: \\ {\tt source /home/anita/Code/anitaTelem/setupAwareVariablesForTelem.sh} 
+\item Start the AWARE processing daemons: \\
+  {\tt /home/anita/Code/anitaTelem/startAwareTelem.sh}
+\item Start the copying scripts (see above for details): \\
+\end{itemize}
+\end{description}
+
+With the RF system on there should always be lots of data to flush through the buffers of our telemetry system. Without the RF system on it is a good idea to have PPS and software triggers enabled to ensure everything ticks along nicely. If the event taking is disabled then the houskeeping data may take a long time (10s of minutes) to trickle through all the buffers in the telemetry pipe.
+
+\begin{thebibliography}{99}
+        
+\bibitem{web:anitaMonitoring}
+ Delaware monitoring website, \url{http://www.bartol.udel.edu/gp/anita/}
+
+\bibitem{web:martyDataTransfer}
+  Marty's data transfer website, \url{https://physics.wustl.edu/marty/anita/data_xfer/how_it_works_14.html}
+
+\end{thebibliography}
+
+\end{document}
+
