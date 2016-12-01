@@ -101,7 +101,8 @@ ${ANITA_BUILD_TOOL_DIR}/components/pyinotify/python2
 For simplicity there are two criticial environmentals that describe where the input data {\tt \$ANITA\_TELEM\_DATA\_DIR} and the AWARE output dir {\tt \$AWARE\_OUTPUT\_DIR} will be located.
 
 \subsection{Input Directory Structures}
-The {\tt \$ANITA\_TELEM\_DATA\_DIR} environmental variable points to the location where the input telemetry data is located. This directory will also host the pseudo-raw and root data that is created by processing the raw telemetry files. An example of the data structure is shown below.
+The {\tt \$ANITA\_TELEM\_DATA\_DIR} environmental variable points to the location where the input telemetry data is located. This directory will also host the pseudo-raw and root data that is created by processing the raw telemetry files. An example of the data structure is shown below. I am not entirely sure how closely this mirrors the setup of the GSE telemetry directories. In the worst case the directory structure required below could be formed by extensive use of symlinks.
+
 \begin{verbatim}
 /nasc/flight1617/telem/fast_tdrss  #The fast_tdrss numerical directories and files
 /nasc/flight1617/telem/iridium  #The iridium numerical directories and files
