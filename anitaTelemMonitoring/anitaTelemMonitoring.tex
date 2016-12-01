@@ -50,12 +50,12 @@ A suite of database-based monitoring programs have been developed and are descri
 This document will describe the AWARE monitoring software and explain how to run the various scripts that make up AWARE at anita-aware.
 
 \section{Telemetry Data Copy Scripts}
-There are individual scripts for copying data from one of the acquisition to anita-aware, these are located in {\tt  /home/anita/palestine/copyScripts}. The four data copying scripts are:
+There are individual scripts for copying data from one of the acquisition to anita-aware, these are located in {\tt  /home/anita/ldb2016/copyScripts}. The four data copying scripts are:
 \begin{description}
-\item{streamLOSdata.sh} \\Copies data from the LOS acquisition machine to {\tt /data/palestine2016/telem/raw\_los}
-\item{streamTDRSSdata.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/palestine2016/telem/fast\_tdrss}
-\item{streamOpenportDataSouth.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/palestine2016/telem/openport}
-\item{streamSlowRate.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/palestine2016/telem/slow\_tdrss(iridium)}
+\item{streamLOSdata.sh} \\Copies data from the LOS acquisition machine to {\tt /data/ldb2016/telem/raw\_los}
+\item{streamTDRSSdata.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/ldb2016/telem/fast\_tdrss}
+\item{streamOpenportDataSouth.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/ldb2016/telem/openport}
+\item{streamSlowRate.sh} \\Copies data from tdrss1 in Palestine to {\tt /data/ldb2016/telem/slow\_tdrss(iridium)}
 \end{description}
 normally these will be running in the upper left virtual window of anita-aware. After a reboot of anita-aware these scripts need to be manually restarted. Very occasionally one of the scripts will get hung up and will need to be killed (Ctl-c) and restarted.
 
@@ -75,7 +75,7 @@ As each new telemetry file arrives on anita-aware it is automatically processed 
 The code and scripts for processing the telemetry data in to pseudo-raw data are all located in {\tt /home/anita/Code/anitaTelem}. The important scripts are:
 \begin{description}
 \item{setupAwareVariablesForTelem.sh} \\Sets the various environmental variables needed by the aware processing scripts.
-\item{processTelemFile} \\Runs over one or more telemetry files and creates pseudo-raw files in the raw data directory, e.g  {\texttt /data/palestine2016/telem/raw\_los/00278/000175}
+\item{processTelemFile} \\Runs over one or more telemetry files and creates pseudo-raw files in the raw data directory, e.g  {\texttt /data/ldb2016/telem/raw\_los/00278/000175}
 \item{newTelemFileWatcher.py} \\A python script that uses libinotify to call processTelemFile when new telemetry files arrive on anita-aware.
 \item{startAwareTelem.sh} \\A simple script which checks if the correct environmental variables are set, and checks if the processing and rootifying scripts are running.
 \end{description}
@@ -97,7 +97,7 @@ In {\tt /home/anita/Code/anitaAwareFileMaker} are the worker scripts and program
 The raw php, html and javascript files that make up AWARE are in {\tt /home/anita/Code/awareTelem}. This is the directory which is mounted on the web server at \url{http://157.132.95.98/awareTelem/}. In brief, the files {\tt web/config/ANITA4} are the ANITA4 customised files which make up the AWARE web monitor.
 
 \section{Directory Structure}
-The directory structure in {\tt /data/palestine2016/telem/} is summarised below:
+The directory structure in {\tt /data/ldb2016/telem/} is summarised below:
 \begin{description}
 \item{{\tt raw}} \\The pseudo-raw run directories are created here
 \item{{\tt root}} \\The ROOT run directories are created here

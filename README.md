@@ -6,4 +6,5 @@ This is a collection of documents describing the instrument, flight software and
 * SIP Simulator User Guide
 * GPS Calibration Guide
 * Flight Software Overview
-* Telemetry Monitoring Guide
+* Telemetry Monitoring
+
